@@ -1,0 +1,166 @@
+Backend Technical Prompt: The Hauntographer API
+1. API Endpoint Specification
+Route: POST /api/generate
+
+Description: A single, stateless endpoint that serves as the core orchestrator for "The Hauntographer". It receives the current state of the user's journey and generates the next chapter.
+
+Authentication: None (for hackathon scope).
+
+2. Data Contracts (JSON Schemas)
+2.1. Request Body (/api/generate Request)
+
+This is the JSON object the frontend must send in the body of the POST request.
+
+JSON
+
+{
+  "storyProfile": {
+    "fears": "string", // Example: "spiders, claustrophobia, being watched"
+    "genre": "string"  // Example: "Gothic", "Cosmic", "Slasher", "Psychological"
+  },
+  "storyHistory": [
+    {
+      "role": "string", // "user" or "model"
+      "content": "string" // The text of the choice made or the story chunk generated
+    }
+  ],
+  "userReaction": "string | null", // Optional text from the user about the last chunk
+  "flags": {
+    "generateVideo": "boolean" // Optional flag to trigger the video generation moonshot feature
+  }
+}
+storyProfile: Contains the foundational elements of the horror. Required for the first turn, can be omitted on subsequent turns.
+
+storyHistory: An array representing the entire conversation so far. This makes the endpoint stateless. The frontend is responsible for maintaining and sending this history. The last element will always be the user's most recent choice.
+
+userReaction: The user's optional emotional feedback.
+
+flags: Feature flags for enabling high-complexity features on demand.
+
+2.2. Response Body (/api/generate Response)
+
+This is the JSON object the backend will always return upon success.
+
+JSON
+
+{
+  "nextStoryChunk": "string", // The newly generated paragraph(s) of the story.
+  "choices": ["string", "string"], // Exactly two new choices for the user.
+  "visuals": {
+    "imageUrl": "string", // The direct URL to the generated static image.
+    "videoId": "string | null" // An ID to poll for video status, or null if not requested.
+  },
+  "updatedHistory": [
+    // The full, updated storyHistory array for the frontend to store.
+  ]
+}
+nextStoryChunk: The text to be displayed and narrated.
+
+choices: The two new buttons for the user.
+
+visuals: Contains URLs/IDs for the generated media.
+
+updatedHistory: The complete history, including the new model response and the user's next choice prompt, for the frontend to use in the next request.
+
+3. Core Orchestration Flow
+Upon receiving a request, the API route must execute the following steps in sequence:
+
+Validation:
+
+Parse the incoming request body.
+
+For the first turn (storyHistory is empty), validate that storyProfile.fears and storyProfile.genre exist and are not empty.
+
+For subsequent turns, validate that storyHistory is a non-empty array.
+
+If validation fails, immediately return a 400 Bad Request response with a clear error message.
+
+Sentiment Analysis (Adaptive Logic):
+
+Check if userReaction is present and non-empty.
+
+If yes, process the string using the sentiment npm package to derive a numerical score.
+
+Master Prompt Construction:
+
+Dynamically assemble the master prompt for the Gemini LLM. This is the most critical step. The prompt must contain placeholders for all dynamic data: fears, genre, the full story history, and the calculated sentiment score. (See Section 4 for the full prompt text).
+
+LLM Invocation:
+
+Send the constructed master prompt to the Google Gemini API.
+
+Request a JSON response format.
+
+Implement a try/catch block. If the API call fails, proceed to the error handling logic.
+
+LLM Response Parsing:
+
+Upon receiving a successful response, parse the JSON string.
+
+Validate that the JSON contains the expected keys: story_chunk, image_prompt, and choices. If parsing fails or keys are missing, assume the LLM response was malformed and proceed to error handling.
+
+Visual Generation (Parallel Execution):
+
+Image Generation (Required):
+
+Augment the image_prompt from the LLM with stylistic keywords (e.g., "cinematic horror, ultra-realistic, dramatic lighting, style of {genre}").
+
+Invoke the Stability AI API. This is a primary, blocking task. Await the imageUrl.
+
+Video Generation (Optional):
+
+Check if flags.generateVideo is true.
+
+If so, asynchronously invoke the Replicate API with the same augmented prompt. Do not await the final result.
+
+Store the id returned from Replicate's initial response. This is the videoId.
+
+State Update & Response Assembly:
+
+Append the new story_chunk and choices to the storyHistory array.
+
+Construct the final success response object according to the schema in Section 2.2.
+
+Return the JSON object with a 200 OK status.
+
+4. The Master LLM Prompt Template
+Plaintext
+
+You are 'The Hauntographer', a master AI horror storyteller that generates interactive, personalized narratives. Your responses MUST be a single, valid JSON object and nothing else.
+
+// --- User Profile ---
+const userProfile = {
+  fears: "{fears}",
+  genre: "{genre}"
+};
+
+// --- Story Context ---
+const storyHistory = {history_array_as_string};
+
+// --- User's Last Reaction ---
+// (A negative score indicates fear/discomfort, positive indicates amusement/boredom)
+const emotionalScore = {sentiment_score};
+
+// --- Your Instructions ---
+/*
+1.  **Analyze the context:** Review the user's profile and the entire story history.
+2.  **Adapt to Emotion:** If the `emotionalScore` is negative or zero, maintain or escalate the current style of horror. If the score is positive, you MUST pivot your narrative strategy—introduce a different kind of scare, deepen the mystery, or build atmospheric dread instead of direct confrontation.
+3.  **Write the Next Chapter:** Continue the story with 1-2 new paragraphs. The narrative MUST conform to the user's chosen `genre` and incorporate their `fears`.
+4.  **Create Choices:** Conclude your story chunk with exactly two distinct, compelling choices for the user to make.
+5.  **Generate an Image Prompt:** Create a highly descriptive, visceral, and cinematic prompt for an image generation model. This prompt must capture the peak moment of the chapter you just wrote.
+*/
+
+// --- Your Response (JSON ONLY) ---
+{
+  "story_chunk": "The text of the next part of the story...",
+  "image_prompt": "A highly detailed, cinematic, {genre} style prompt for an image...",
+  "choices": ["Choice A", "Choice B"]
+}
+5. Error Handling & Fallbacks
+API Failures (LLM or Visuals): If any external API call fails, the backend should log the specific error for debugging and return a 502 Bad Gateway response to the frontend with a user-friendly error message: {"error": "The spirits are not responding. Please try again later."}.
+
+Malformed LLM Response: If the LLM returns a non-JSON response, attempt the call one more time (a single retry). If it fails again, return a 500 Internal Server Error with the message: {"error": "The narrative has become corrupted. Please refresh and start a new story."}.
+
+6. Environment & Security
+All external API keys (Google, Stability, Replicate) must be stored in and accessed from environment variables (process.env.GOOGLE_API_KEY, etc.) within the Next.js application. They must not be hardcoded in the API route file.
+
