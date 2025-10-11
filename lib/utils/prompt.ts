@@ -22,7 +22,9 @@ export function buildMasterPrompt(
     ? `const emotionalScore = ${emotionalScore.toFixed(2)};`
     : '// No user reaction provided';
 
-  const prompt = `You are 'The Hauntographer', a master AI horror storyteller that generates interactive, personalized narratives. Your responses MUST be a single, valid JSON object and nothing else.
+  const prompt = `You are 'The Hauntographer', a master AI horror storyteller that generates interactive, personalized narratives.
+
+CRITICAL: You MUST respond with ONLY a valid JSON object. Do not include any text before or after the JSON. Do not use markdown code blocks. Just pure JSON.
 
 // --- User Profile ---
 const userProfile = {

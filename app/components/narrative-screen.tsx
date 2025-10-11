@@ -135,24 +135,40 @@ export function NarrativeScreen({
                       {!imageLoaded && (
                         <Skeleton className="absolute inset-0 w-full h-full rounded-md" />
                       )}
-                      <Image
-                        src={imageUrl}
-                        alt="A haunting scene from your personalized horror story"
-                        fill
-                        className={`object-cover rounded-md transition-all duration-700 ease-in-out ${
-                          imageLoaded ? "opacity-100 scale-100" : "opacity-0 scale-95"
-                        }`}
-                        onLoad={() => setImageLoaded(true)}
-                        onError={() => {
-                          setImageError(true);
-                          setImageLoaded(false);
-                        }}
-                        priority
-                        sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 40vw"
-                        quality={85}
-                        placeholder="blur"
-                        blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k="
-                      />
+                      {imageUrl.startsWith('data:') ? (
+                        // Use regular img tag for base64 images (from Stability AI)
+                        <img
+                          src={imageUrl}
+                          alt="A haunting scene from your personalized horror story"
+                          className={`w-full h-full object-cover rounded-md transition-all duration-700 ease-in-out ${
+                            imageLoaded ? "opacity-100 scale-100" : "opacity-0 scale-95"
+                          }`}
+                          onLoad={() => setImageLoaded(true)}
+                          onError={() => {
+                            setImageError(true);
+                            setImageLoaded(false);
+                          }}
+                        />
+                      ) : (
+                        // Use Next.js Image for external URLs (like Unsplash)
+                        <Image
+                          src={imageUrl}
+                          alt="A haunting scene from your personalized horror story"
+                          fill
+                          className={`object-cover rounded-md transition-all duration-700 ease-in-out ${
+                            imageLoaded ? "opacity-100 scale-100" : "opacity-0 scale-95"
+                          }`}
+                          onLoad={() => setImageLoaded(true)}
+                          onError={() => {
+                            setImageError(true);
+                            setImageLoaded(false);
+                          }}
+                          priority
+                          sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 40vw"
+                          quality={85}
+                          unoptimized={imageUrl.includes('unsplash')}
+                        />
+                      )}
                     </div>
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">

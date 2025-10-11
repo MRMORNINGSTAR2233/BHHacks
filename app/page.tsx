@@ -13,23 +13,47 @@ const NarrativeScreen = dynamic(() => import("@/app/components/narrative-screen"
   loading: () => <div className="min-h-screen flex items-center justify-center bg-background"><div className="text-foreground">Loading story...</div></div>
 });
 
-// Mock API function - replace with actual API calls later
-const mockApiCall = async (fears: string, genre: HorrorGenre, previousChoice?: string): Promise<StoryResponse> => {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 2000));
+// Real API call to backend
+const callGenerateAPI = async (
+  storyProfile: { fears: string; genre: HorrorGenre } | undefined,
+  storyHistory: Array<{ role: 'user' | 'model'; content: string }>,
+  userReaction?: string
+): Promise<StoryResponse> => {
+  const response = await fetch('/api/generate', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      storyProfile,
+      storyHistory,
+      userReaction: userReaction || null,
+      flags: {
+        generateVideo: false, // Set to true if you want video generation
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    let errorMessage = 'Failed to generate story';
+    try {
+      const error = await response.json();
+      errorMessage = error.error || errorMessage;
+    } catch {
+      // If response is not JSON, use status text
+      errorMessage = response.statusText || errorMessage;
+    }
+    throw new Error(errorMessage);
+  }
+
+  const data = await response.json();
   
-  const storyVariation = previousChoice 
-    ? `Your choice to "${previousChoice.toLowerCase()}" leads you deeper into the ${genre.toLowerCase()} nightmare. The fear of ${fears.toLowerCase()} manifests in ways you never imagined.`
-    : `The shadows whisper of your fear of ${fears.toLowerCase()}. In this ${genre.toLowerCase()} tale, you find yourself standing at a crossroads where reality bends and nightmares take form. The air grows cold as something ancient stirs in the darkness ahead.`;
-  
+  // Transform API response to match StoryResponse interface
   return {
-    story_chunk: storyVariation,
-    image_url: "https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=800&h=600&fit=crop",
-    choices: [
-      "Step forward into the darkness, embracing whatever awaits",
-      "Turn back and seek another path, hoping to avoid your fate"
-    ],
-    is_complete: false
+    story_chunk: data.nextStoryChunk,
+    image_url: data.visuals.imageUrl,
+    choices: data.choices as [string, string],
+    is_complete: false,
   };
 };
 
@@ -51,7 +75,12 @@ export default function Home() {
     setAppState('loading');
     
     try {
-      const response = await mockApiCall(fears, genre);
+      // Call real API with initial story profile
+      const response = await callGenerateAPI(
+        { fears, genre },
+        [], // Empty history for first turn
+        undefined
+      );
       
       setAppData(prev => ({
         ...prev,
@@ -66,7 +95,7 @@ export default function Home() {
       setAppState('narrative');
     } catch (error) {
       console.error('Failed to generate story:', error);
-      // Handle error - could show error message
+      alert(error instanceof Error ? error.message : 'Failed to generate story. Please try again.');
       setAppState('setup');
     } finally {
       setIsLoading(false);
@@ -88,7 +117,27 @@ export default function Home() {
     };
 
     try {
-      const response = await mockApiCall(appData.fears, appData.genre, choice);
+      // Build story history in the format the API expects
+      const apiHistory: Array<{ role: 'user' | 'model'; content: string }> = [];
+      
+      // Add all previous segments
+      appData.storyHistory.forEach(segment => {
+        apiHistory.push({ role: 'model', content: segment.text });
+        if (segment.userChoice) {
+          apiHistory.push({ role: 'user', content: segment.userChoice });
+        }
+      });
+      
+      // Add current segment
+      apiHistory.push({ role: 'model', content: appData.currentStory });
+      apiHistory.push({ role: 'user', content: choice });
+      
+      // Call real API with history
+      const response = await callGenerateAPI(
+        undefined, // No need to send profile again
+        apiHistory,
+        reaction
+      );
       
       setAppData(prev => ({
         ...prev,
@@ -100,12 +149,12 @@ export default function Home() {
       
     } catch (error) {
       console.error('Failed to continue story:', error);
-      // Handle error - could show error message or retry option
+      alert(error instanceof Error ? error.message : 'Failed to continue story. Please try again.');
     } finally {
       setIsLoading(false);
       setSelectedChoice(undefined);
     }
-  }, [appData.fears, appData.genre, appData.currentStory, appData.currentImage, appData.currentChoices]);
+  }, [appData.storyHistory, appData.currentStory, appData.currentImage, appData.currentChoices]);
 
   const renderCurrentState = useMemo(() => {
     switch (appState) {

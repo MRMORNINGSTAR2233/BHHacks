@@ -23,9 +23,9 @@ function getGeminiClient(): GoogleGenerativeAI {
 export async function generateNarrative(prompt: string): Promise<LLMResponse> {
   const client = getGeminiClient();
   
-  // Use gemini-1.5-flash for faster responses (can switch to gemini-1.5-pro for better quality)
+  // Use gemini-2.5-flash for latest stable features with JSON mode
   const model = client.getGenerativeModel({
-    model: 'gemini-1.5-flash',
+    model: 'gemini-2.5-flash',
     generationConfig: {
       temperature: 0.8,
       maxOutputTokens: 2048,
@@ -42,7 +42,24 @@ export async function generateNarrative(prompt: string): Promise<LLMResponse> {
     try {
       const result = await model.generateContent(prompt);
       const response = result.response;
-      const text = response.text();
+      let text = response.text();
+
+      // Clean up the response text to extract JSON
+      // Sometimes the model wraps JSON in markdown code blocks
+      text = text.trim();
+      
+      // Remove markdown code blocks if present
+      if (text.startsWith('```json')) {
+        text = text.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+      } else if (text.startsWith('```')) {
+        text = text.replace(/^```\s*/, '').replace(/\s*```$/, '');
+      }
+      
+      // Try to find JSON object in the text
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        text = jsonMatch[0];
+      }
 
       // Parse JSON response
       let parsedResponse: unknown;
