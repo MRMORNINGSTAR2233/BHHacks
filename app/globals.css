@@ -1,0 +1,207 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-inter);
+  --font-serif: var(--font-special-elite);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+:root {
+  --radius: 0.625rem;
+  /* Cursed Grimoire Color Palette */
+  --background: hsl(0 0% 2%);           /* #050505 - Deep, near-black */
+  --foreground: hsl(0 0% 80%);          /* #cccccc - Soft, off-white */
+  --card: hsl(0 0% 4%);                 /* #0a0a0a - Slightly lighter than background */
+  --card-foreground: hsl(0 0% 80%);     /* #cccccc - Same as foreground */
+  --popover: hsl(0 0% 4%);              /* #0a0a0a - Same as card */
+  --popover-foreground: hsl(0 0% 80%);  /* #cccccc - Same as foreground */
+  --primary: hsl(0 75% 35%);            /* #b02828 - Deep, desaturated "dried blood" red */
+  --primary-foreground: hsl(0 0% 95%);  /* #f2f2f2 - For text on primary buttons */
+  --secondary: hsl(0 0% 8%);            /* Slightly lighter than card */
+  --secondary-foreground: hsl(0 0% 80%); /* Same as foreground */
+  --muted: hsl(0 0% 8%);                /* Same as secondary */
+  --muted-foreground: hsl(0 0% 45%);    /* #737373 - For placeholder text and subtle hints */
+  --accent: hsl(0 0% 8%);               /* Same as secondary */
+  --accent-foreground: hsl(0 0% 80%);   /* Same as foreground */
+  --destructive: hsl(0 75% 35%);        /* Same as primary for consistency */
+  --destructive-foreground: hsl(0 0% 95%); /* Same as primary-foreground */
+  --border: hsl(0 0% 15%);              /* #262626 - For subtle borders */
+  --input: hsl(0 0% 4%);                /* Same as card */
+  --ring: hsl(0 75% 35%);               /* Same as primary for focus rings */
+  --chart-1: hsl(0 75% 35%);
+  --chart-2: hsl(0 0% 45%);
+  --chart-3: hsl(0 0% 25%);
+  --chart-4: hsl(0 0% 35%);
+  --chart-5: hsl(0 0% 55%);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground font-sans;
+  }
+  
+  /* Typography classes for the cursed grimoire aesthetic */
+  .font-title {
+    font-family: var(--font-special-elite), serif;
+    letter-spacing: 0.05em;
+  }
+  
+  .font-body {
+    font-family: var(--font-inter), sans-serif;
+    line-height: 1.6;
+  }
+  
+  /* Custom font sizes for atmospheric hierarchy */
+  .text-title {
+    font-size: 2.5rem;
+    line-height: 1.2;
+  }
+  
+  .text-subtitle {
+    font-size: 1.5rem;
+    line-height: 1.3;
+  }
+  
+  /* Enhanced button hover effects */
+  .btn-glow:hover {
+    box-shadow: 0 0 20px hsl(var(--primary) / 0.3);
+  }
+  
+  /* Subtle pulse animation for loading states */
+  .pulse-glow {
+    animation: pulse-glow 2s ease-in-out infinite alternate;
+  }
+  
+  @keyframes pulse-glow {
+    from {
+      box-shadow: 0 0 10px hsl(var(--primary) / 0.2);
+    }
+    to {
+      box-shadow: 0 0 20px hsl(var(--primary) / 0.4);
+    }
+  }
+  
+  /* Enhanced focus indicators for accessibility */
+  *:focus-visible {
+    outline: 2px solid hsl(var(--primary));
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+  
+  /* Skip to main content link for screen readers */
+  .skip-link {
+    position: absolute;
+    top: -40px;
+    left: 6px;
+    background: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+    padding: 8px;
+    text-decoration: none;
+    border-radius: 4px;
+    z-index: 1000;
+  }
+  
+  .skip-link:focus {
+    top: 6px;
+  }
+  
+  /* Ensure interactive elements have proper focus states */
+  button:focus-visible,
+  input:focus-visible,
+  textarea:focus-visible,
+  [role="button"]:focus-visible {
+    box-shadow: 0 0 0 2px hsl(var(--background)), 0 0 0 4px hsl(var(--primary));
+  }
+  
+  /* Respect user's motion preferences */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+    
+    .animate-pulse,
+    .pulse-glow {
+      animation: none !important;
+    }
+  }
+  
+  /* High contrast mode support */
+  @media (prefers-contrast: high) {
+    :root {
+      --background: hsl(0 0% 0%);
+      --foreground: hsl(0 0% 100%);
+      --primary: hsl(0 100% 50%);
+      --border: hsl(0 0% 50%);
+    }
+  }
+  
+  /* Ensure sufficient color contrast */
+  .text-muted-foreground {
+    color: hsl(0 0% 60%); /* Improved contrast from 45% */
+  }
+  
+  /* Atmospheric background texture */
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: 
+      radial-gradient(circle at 20% 80%, hsl(var(--primary) / 0.03) 0%, transparent 50%),
+      radial-gradient(circle at 80% 20%, hsl(var(--primary) / 0.03) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: -1;
+  }
+  
+  /* Subtle text shadow for better readability */
+  .font-title {
+    text-shadow: 0 2px 4px hsl(var(--background) / 0.8);
+  }
+}
