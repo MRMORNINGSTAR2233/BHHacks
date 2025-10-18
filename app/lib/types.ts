@@ -30,6 +30,14 @@ export interface StorySegment {
   userReaction?: string;
 }
 
+export interface InventoryItem {
+  id: string;
+  name: string;
+  icon: string;
+  description: string;
+  usable: boolean;
+}
+
 export interface AppData {
   mode: GameMode;
   fears: string;
@@ -40,7 +48,12 @@ export interface AppData {
   storyHistory: StorySegment[];
   
   // Game Mode only
+  gameCode?: string; // Generated game HTML/CSS/JS
+  gameState?: unknown; // Current game state
   fearLevel?: number;
+  health?: number; // 0-100
+  sanity?: number; // 0-100
+  inventory?: InventoryItem[];
   achievements?: Achievement[];
   statistics?: GameStatistics;
   startTime?: number;
@@ -83,8 +96,12 @@ export interface NarrativeScreenProps {
   isLoading: boolean;
   selectedChoice?: string;
   fearLevel?: number;
+  health?: number;
+  sanity?: number;
+  inventory?: InventoryItem[];
   storyHistory?: StorySegment[];
   onSave?: () => void;
+  onUseItem?: (itemId: string) => void;
 }
 
 export interface TypewriterTextProps {

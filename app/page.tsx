@@ -16,6 +16,7 @@ import { saveGame, loadGame, hasSavedGame } from "@/lib/utils/save-load";
 import { calculateFearLevel } from "@/lib/utils/fear-calculator";
 import { checkAchievements } from "@/lib/utils/achievements";
 import { AchievementNotification } from "@/app/components/achievement-notification";
+import { AudioPlayer } from "@/app/components/audio-player";
 
 // Lazy load components
 const ModeSelectionScreen = dynamic(
@@ -55,6 +56,20 @@ const NarrativeScreen = dynamic(
     loading: () => (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-foreground">Loading story...</div>
+      </div>
+    ),
+  }
+);
+
+const GameModeScreen = dynamic(
+  () =>
+    import("@/app/components/game-mode-screen").then((mod) => ({
+      default: mod.GameModeScreen,
+    })),
+  {
+    loading: () => (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-foreground">Loading game...</div>
       </div>
     ),
   }
@@ -159,6 +174,9 @@ export default function Home() {
       ...prev,
       mode,
       fearLevel: mode === "game" ? 0 : undefined,
+      health: mode === "game" ? 100 : undefined,
+      sanity: mode === "game" ? 100 : undefined,
+      inventory: mode === "game" ? [] : undefined,
       achievements: mode === "game" ? [] : undefined,
       statistics:
         mode === "game"
@@ -193,25 +211,73 @@ export default function Home() {
       setAppState("loading");
 
       try {
-        const response = await callGenerateAPI({ fears, genre }, [], undefined);
-
+        // Update app data first
         setAppData((prev) => ({
           ...prev,
           fears,
           genre,
-          currentStory: response.story_chunk,
-          currentImage: response.image_url,
-          currentChoices: response.choices,
-          storyHistory: [],
         }));
+
+        // If Game Mode, generate game automatically
+        if (appData.mode === "game") {
+          console.log("[Client] Auto-generating game for Game Mode");
+
+          const gameResponse = await fetch("/api/generate-game", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              gameDescription: fears,
+              genre: genre,
+            }),
+          });
+
+          const gameData = await gameResponse.json();
+
+          if (!gameResponse.ok) {
+            console.error("[Client] Game generation failed:", gameData);
+            throw new Error(gameData.error || "Failed to generate game");
+          }
+
+          console.log("[Client] Game generated, launching...");
+
+          setAppData((prev) => ({
+            ...prev,
+            fears,
+            genre,
+            gameCode: gameData.gameCode,
+            currentStory: "",
+            currentImage: undefined,
+            currentChoices: ["", ""],
+            storyHistory: [],
+          }));
+        } else {
+          // Story Mode - generate story
+          const response = await callGenerateAPI(
+            { fears, genre },
+            [],
+            undefined
+          );
+
+          setAppData((prev) => ({
+            ...prev,
+            fears,
+            genre,
+            currentStory: response.story_chunk,
+            currentImage: response.image_url,
+            currentChoices: response.choices,
+            storyHistory: [],
+          }));
+        }
 
         setAppState("narrative");
       } catch (error) {
-        console.error("Failed to generate story:", error);
+        console.error("Failed to generate:", error);
         alert(
           error instanceof Error
             ? error.message
-            : "Failed to generate story. Please try again."
+            : "Failed to generate. Please try again."
         );
         setAppState("setup");
       } finally {
@@ -219,7 +285,7 @@ export default function Home() {
         setSelectedChoice(undefined);
       }
     },
-    []
+    [appData.mode]
   );
 
   const handleChoiceSelect = useCallback(
@@ -332,6 +398,65 @@ export default function Home() {
     }
   }, [appData]);
 
+  const handleGenerateGame = useCallback(async () => {
+    setIsLoading(true);
+
+    try {
+      console.log("[Client] Generating game with:", {
+        description: appData.fears,
+        genre: appData.genre,
+      });
+
+      const response = await fetch("/api/generate-game", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          gameDescription: appData.fears,
+          genre: appData.genre,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.error("[Client] API error:", data);
+        throw new Error(data.error || "Failed to generate game");
+      }
+
+      console.log(
+        "[Client] Game generated successfully, code length:",
+        data.gameCode?.length
+      );
+      console.log(
+        "[Client] Game code preview:",
+        data.gameCode?.substring(0, 200)
+      );
+
+      setAppData((prev) => ({
+        ...prev,
+        gameCode: data.gameCode,
+      }));
+    } catch (error) {
+      console.error("[Client] Failed to generate game:", error);
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Failed to generate game. Please try again."
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  }, [appData.fears, appData.genre]);
+
+  const handleGameStateChange = useCallback((state: unknown) => {
+    setAppData((prev) => ({
+      ...prev,
+      gameState: state,
+    }));
+  }, []);
+
   const renderCurrentState = useMemo(() => {
     switch (appState) {
       case "modeSelection":
@@ -355,18 +480,43 @@ export default function Home() {
       case "narrative":
       case "loading":
         return (
-          <NarrativeScreen
-            mode={appData.mode}
-            storyChunk={appData.currentStory}
-            imageUrl={appData.currentImage}
-            choices={appData.currentChoices}
-            onChoiceSelect={handleChoiceSelect}
-            isLoading={isLoading}
-            selectedChoice={selectedChoice}
-            fearLevel={appData.fearLevel}
-            storyHistory={appData.storyHistory}
-            onSave={appData.mode === "game" ? handleSave : undefined}
-          />
+          <>
+            {appData.mode === "game" ? (
+              <GameModeScreen
+                gameCode={appData.gameCode}
+                isGenerating={isLoading}
+                onGenerateGame={handleGenerateGame}
+                onRegenerateGame={handleGenerateGame}
+                health={appData.health || 100}
+                sanity={appData.sanity || 100}
+                fearLevel={appData.fearLevel || 0}
+                inventory={appData.inventory || []}
+                onSave={handleSave}
+                onGameStateChange={handleGameStateChange}
+              />
+            ) : (
+              <NarrativeScreen
+                mode={appData.mode}
+                storyChunk={appData.currentStory}
+                imageUrl={appData.currentImage}
+                choices={appData.currentChoices}
+                onChoiceSelect={handleChoiceSelect}
+                isLoading={isLoading}
+                selectedChoice={selectedChoice}
+                fearLevel={appData.fearLevel}
+                health={appData.health}
+                sanity={appData.sanity}
+                inventory={appData.inventory}
+                storyHistory={appData.storyHistory}
+                onSave={undefined}
+              />
+            )}
+            <AudioPlayer
+              mode={appData.mode}
+              fearLevel={appData.fearLevel}
+              isPlaying={appState === "narrative"}
+            />
+          </>
         );
 
       default:
@@ -389,6 +539,8 @@ export default function Home() {
     handleSetupSubmit,
     handleChoiceSelect,
     handleSave,
+    handleGenerateGame,
+    handleGameStateChange,
   ]);
 
   return (

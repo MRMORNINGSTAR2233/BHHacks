@@ -10,8 +10,10 @@ import { Loader2, Volume2, VolumeX, Save } from "lucide-react";
 import { TypewriterText } from "@/app/components/typewriter-text";
 import { NarrativeScreenProps } from "@/app/lib/types";
 import { EnhancedImage } from "@/app/components/enhanced-image";
-import { FearMeter } from "@/app/components/fear-meter";
+import { GameHUD } from "@/app/components/game-hud";
+import { GameInventory } from "@/app/components/game-inventory";
 import { StoryTimeline } from "@/app/components/story-timeline";
+import { StoryModeScreen } from "@/app/components/story-mode-screen";
 import Image from "next/image";
 
 export function NarrativeScreen({
@@ -23,8 +25,12 @@ export function NarrativeScreen({
   isLoading,
   selectedChoice,
   fearLevel = 0,
+  health = 100,
+  sanity = 100,
+  inventory = [],
   storyHistory = [],
   onSave,
+  onUseItem,
 }: NarrativeScreenProps) {
   const [reaction, setReaction] = useState("");
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -35,7 +41,7 @@ export function NarrativeScreen({
 
   const isGameMode = mode === 'game';
 
-  // Initialize speech synthesis
+  // Initialize speech synthesis (must be before any conditional returns)
   useEffect(() => {
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
       setSpeechSynthesis(window.speechSynthesis);
@@ -84,6 +90,20 @@ export function NarrativeScreen({
     }
   }, [storyChunk, speechSynthesis, isLoading, narrateStory]);
 
+  // Route to Story Mode Screen if in story mode (after all hooks)
+  if (mode === 'story') {
+    return (
+      <StoryModeScreen
+        storyChunk={storyChunk}
+        imageUrl={imageUrl}
+        choices={choices}
+        onChoiceSelect={onChoiceSelect}
+        isLoading={isLoading}
+        selectedChoice={selectedChoice}
+      />
+    );
+  }
+
   const toggleNarration = () => {
     if (!speechSynthesis) return;
 
@@ -107,12 +127,20 @@ export function NarrativeScreen({
   return (
     <div className="min-h-screen bg-background p-4">
       <div className="max-w-7xl mx-auto animate-in fade-in duration-700">
-        {/* Game Mode: Three-column layout */}
+        {/* Game Mode: Three-column layout with dark game aesthetic */}
         {isGameMode ? (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-[80vh]">
-            {/* Left Sidebar - Game Features */}
+            {/* Left Sidebar - Game HUD & Features */}
             <div className="lg:col-span-3 space-y-4">
-              <FearMeter fearLevel={fearLevel} storyDepth={storyHistory.length} />
+              <GameHUD
+                health={health}
+                sanity={sanity}
+                fearLevel={fearLevel}
+              />
+              <GameInventory
+                items={inventory}
+                onUseItem={onUseItem}
+              />
               <StoryTimeline
                 entries={storyHistory.map(seg => ({
                   text: seg.text,
@@ -124,11 +152,11 @@ export function NarrativeScreen({
                 <Button
                   onClick={onSave}
                   variant="outline"
-                  className="w-full"
+                  className="w-full bg-primary/10 border-primary/30 hover:bg-primary/20"
                   disabled={isLoading}
                 >
                   <Save className="h-4 w-4 mr-2" />
-                  Save Progress
+                  Save Game
                 </Button>
               )}
             </div>
