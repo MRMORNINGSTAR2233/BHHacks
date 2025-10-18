@@ -11,7 +11,7 @@ import { SetupScreenProps, HorrorGenre } from "@/app/lib/types";
 
 const HORROR_GENRES: HorrorGenre[] = ['Gothic', 'Cosmic', 'Slasher', 'Psychological'];
 
-export function SetupScreen({ onSubmit, isLoading }: SetupScreenProps) {
+export function SetupScreen({ onSubmit, isLoading, onBack }: SetupScreenProps) {
   const [fears, setFears] = useState("");
   const [selectedGenre, setSelectedGenre] = useState<HorrorGenre | "">("");
 
@@ -28,6 +28,17 @@ export function SetupScreen({ onSubmit, isLoading }: SetupScreenProps) {
     <div className="min-h-screen flex items-center justify-center p-4 bg-background">
       <Card className="w-full max-w-2xl mx-auto border-border animate-in fade-in duration-500" role="main" aria-labelledby="app-title">
         <CardHeader className="text-center space-y-4 relative">
+          {onBack && (
+            <Button
+              onClick={onBack}
+              variant="ghost"
+              size="sm"
+              className="absolute left-4 top-4 z-20"
+              disabled={isLoading}
+            >
+              ← Back
+            </Button>
+          )}
           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/5 to-transparent opacity-50"></div>
           <h1 id="app-title" className="font-title text-title text-foreground relative z-10 drop-shadow-lg">
             The Hauntographer

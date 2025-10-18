@@ -2,7 +2,25 @@
 
 export type HorrorGenre = 'Gothic' | 'Cosmic' | 'Slasher' | 'Psychological';
 
-export type AppState = 'setup' | 'narrative' | 'loading';
+export type AppState = 'modeSelection' | 'setup' | 'narrative' | 'loading';
+
+export type GameMode = 'story' | 'game';
+
+export interface Achievement {
+  id: string;
+  title: string;
+  description: string;
+  icon: string;
+  unlockedAt?: Date;
+}
+
+export interface GameStatistics {
+  choicesMade: number;
+  fearLevel: number;
+  timePlayed: number;
+  achievementsUnlocked: number;
+  storiesCompleted: number;
+}
 
 export interface StorySegment {
   text: string;
@@ -13,13 +31,25 @@ export interface StorySegment {
 }
 
 export interface AppData {
+  mode: GameMode;
   fears: string;
   genre: HorrorGenre;
   currentStory: string;
   currentImage?: string;
-  currentVideo?: string | null;
   currentChoices: [string, string];
   storyHistory: StorySegment[];
+  
+  // Game Mode only
+  fearLevel?: number;
+  achievements?: Achievement[];
+  statistics?: GameStatistics;
+  startTime?: number;
+}
+
+export interface SaveData {
+  version: string;
+  savedAt: Date;
+  appData: AppData;
 }
 
 // API interfaces
@@ -33,7 +63,6 @@ export interface StoryRequest {
 export interface StoryResponse {
   story_chunk: string;
   image_url?: string;
-  video_id?: string | null;
   choices: [string, string];
   is_complete: boolean;
 }
@@ -42,16 +71,20 @@ export interface StoryResponse {
 export interface SetupScreenProps {
   onSubmit: (fears: string, genre: HorrorGenre) => void;
   isLoading: boolean;
+  onBack?: () => void;
 }
 
 export interface NarrativeScreenProps {
+  mode: GameMode;
   storyChunk: string;
   imageUrl?: string;
-  videoId?: string | null;
   choices: [string, string];
   onChoiceSelect: (choice: string, reaction?: string) => void;
   isLoading: boolean;
   selectedChoice?: string;
+  fearLevel?: number;
+  storyHistory?: StorySegment[];
+  onSave?: () => void;
 }
 
 export interface TypewriterTextProps {

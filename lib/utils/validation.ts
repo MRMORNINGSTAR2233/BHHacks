@@ -138,22 +138,7 @@ export function validateRequest(body: unknown): ValidationResult {
     request.userReaction = sanitizeString(request.userReaction, MAX_STRING_LENGTH);
   }
 
-  // Validate flags if present
-  if (request.flags !== undefined) {
-    if (typeof request.flags !== 'object' || request.flags === null) {
-      return {
-        valid: false,
-        error: 'flags must be an object',
-      };
-    }
 
-    if (request.flags.generateVideo !== undefined && typeof request.flags.generateVideo !== 'boolean') {
-      return {
-        valid: false,
-        error: 'flags.generateVideo must be a boolean',
-      };
-    }
-  }
 
   // All validation passed
   return {

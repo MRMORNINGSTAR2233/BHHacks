@@ -9,27 +9,17 @@ export interface HistoryEntry {
   content: string;
 }
 
-export interface RequestFlags {
-  generateVideo?: boolean;
-}
-
 export interface GenerateRequest {
   storyProfile?: StoryProfile;
   storyHistory: HistoryEntry[];
   userReaction?: string | null;
-  flags?: RequestFlags;
 }
 
 // Response Types
-export interface Visuals {
-  imageUrl: string;
-  videoId: string | null;
-}
-
 export interface GenerateResponse {
   nextStoryChunk: string;
   choices: [string, string];
-  visuals: Visuals;
+  imageUrl: string;
   updatedHistory: HistoryEntry[];
 }
 

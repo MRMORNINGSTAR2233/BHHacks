@@ -4,7 +4,7 @@ import { analyzeSentiment } from '@/lib/utils/sentiment';
 import { buildMasterPrompt } from '@/lib/utils/prompt';
 import { generateNarrative } from '@/lib/services/gemini';
 import { augmentImagePrompt, generateImage } from '@/lib/services/stability';
-import { generateVideoAsync } from '@/lib/services/replicate';
+
 import { assembleResponse } from '@/lib/utils/response';
 import type { ErrorResponse } from '@/lib/types/api';
 
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { storyProfile, storyHistory, userReaction, flags } = validation.data!;
+    const { storyProfile, storyHistory, userReaction } = validation.data!;
 
     // Sentiment analysis (if user reaction provided)
     let emotionalScore: number | undefined;
@@ -100,19 +100,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate video (async, optional) - animates the generated image
-    let videoId: string | null = null;
-    if (flags?.generateVideo) {
-      videoId = await generateVideoAsync(imageUrl);
-    }
-
     // Assemble final response
-    const response = assembleResponse(llmResponse, imageUrl, videoId, storyHistory);
+    const response = assembleResponse(llmResponse, imageUrl, storyHistory);
 
     console.log('[Hauntographer API] Request completed successfully:', {
       timestamp: new Date().toISOString(),
       historyLength: response.updatedHistory.length,
-      hasVideo: videoId !== null,
     });
 
     return NextResponse.json(response, { status: 200, headers: corsHeaders });
