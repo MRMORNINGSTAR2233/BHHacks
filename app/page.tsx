@@ -29,7 +29,7 @@ const callGenerateAPI = async (
       storyHistory,
       userReaction: userReaction || null,
       flags: {
-        generateVideo: false, // Set to true if you want video generation
+        generateVideo: true, // Enable video generation
       },
     }),
   });
@@ -52,6 +52,7 @@ const callGenerateAPI = async (
   return {
     story_chunk: data.nextStoryChunk,
     image_url: data.visuals.imageUrl,
+    video_id: data.visuals.videoId || null,
     choices: data.choices as [string, string],
     is_complete: false,
   };
@@ -64,6 +65,7 @@ export default function Home() {
     genre: 'Gothic',
     currentStory: '',
     currentImage: undefined,
+    currentVideo: undefined,
     currentChoices: ['', ''],
     storyHistory: []
   });
@@ -88,6 +90,7 @@ export default function Home() {
         genre,
         currentStory: response.story_chunk,
         currentImage: response.image_url,
+        currentVideo: response.video_id,
         currentChoices: response.choices,
         storyHistory: []
       }));
@@ -143,6 +146,7 @@ export default function Home() {
         ...prev,
         currentStory: response.story_chunk,
         currentImage: response.image_url,
+        currentVideo: response.video_id,
         currentChoices: response.choices,
         storyHistory: [...prev.storyHistory, currentSegment]
       }));
@@ -172,6 +176,7 @@ export default function Home() {
           <NarrativeScreen
             storyChunk={appData.currentStory}
             imageUrl={appData.currentImage}
+            videoId={appData.currentVideo}
             choices={appData.currentChoices}
             onChoiceSelect={handleChoiceSelect}
             isLoading={isLoading}

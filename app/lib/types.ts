@@ -17,6 +17,7 @@ export interface AppData {
   genre: HorrorGenre;
   currentStory: string;
   currentImage?: string;
+  currentVideo?: string | null;
   currentChoices: [string, string];
   storyHistory: StorySegment[];
 }
@@ -32,6 +33,7 @@ export interface StoryRequest {
 export interface StoryResponse {
   story_chunk: string;
   image_url?: string;
+  video_id?: string | null;
   choices: [string, string];
   is_complete: boolean;
 }
@@ -45,6 +47,7 @@ export interface SetupScreenProps {
 export interface NarrativeScreenProps {
   storyChunk: string;
   imageUrl?: string;
+  videoId?: string | null;
   choices: [string, string];
   onChoiceSelect: (choice: string, reaction?: string) => void;
   isLoading: boolean;

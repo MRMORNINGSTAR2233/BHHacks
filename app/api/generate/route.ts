@@ -100,10 +100,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate video (async, optional)
+    // Generate video (async, optional) - animates the generated image
     let videoId: string | null = null;
     if (flags?.generateVideo) {
-      videoId = await generateVideoAsync(augmentedPrompt);
+      videoId = await generateVideoAsync(imageUrl);
     }
 
     // Assemble final response
